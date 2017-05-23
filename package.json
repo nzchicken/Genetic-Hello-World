@@ -1,0 +1,19 @@
+{
+  "name": "Genetic-Hello-World",
+  "version": "0.0.1",
+  "description": "Genetic-Hello-World with webpack, webpack-dev-server, babel, and other changes",
+  "main": "app.js",
+  "scripts": {
+    "start": "./node_modules/.bin/webpack-dev-server --content-base ./src --watch-content-base --open"
+  },
+  "repository": "git@github.com:nzchicken/Genetic-Hello-World.git",
+  "author": "Ben Naylor <nayben@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "html-webpack-plugin": "^2.28.0",
+    "webpack": "^2.6.0",
+    "webpack-dev-server": "^2.4.5"
+  }
+}

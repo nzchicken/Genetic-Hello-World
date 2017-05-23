@@ -1,18 +1,16 @@
-var started = false;
+const RUN_ON_START = false;
+const AVAILABLE_CHARACTERS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345789!@#$%^&*()_+`~[]{}\|;':\".,/<>?";
 
 // individual genes
 class Gene {
   constructor(code) {
-    if (code)
-      this.code = code;
-    else
-      this.code = '';
+    this.code = code ? code : [];
     this.cost = 9999;
   }
 
   generateCode(length) {
     for (var i = 0; i < length; i++) {
-      this.code += String.fromCharCode(Math.floor(Math.random() * 255));
+      this.code[i] = Math.floor(Math.random() * AVAILABLE_CHARACTERS.length);
     }
   }
 
@@ -20,7 +18,7 @@ class Gene {
   calcDiff(otherGene) {
     var val = 0;
     for (var i = 0; i < this.code.length; i++) {
-      val += (this.code.charCodeAt(i) - otherGene.charCodeAt(i)) * (this.code.charCodeAt(i) - otherGene.charCodeAt(i));
+      val += (this.code[i] - otherGene.code[i]) * (this.code[i] - otherGene.code[i]);
     }
     this.cost = val;
   }
@@ -32,8 +30,8 @@ class Gene {
     var pivot = Math.round(this.code.length/2) - 1;
 
     // new children will take half of each gene
-    var newChild_1 = this.code.substr(0, pivot) + gene.code.substr(pivot);
-    var newChild_2 = gene.code.substr(0, pivot) + this.code.substr(pivot);
+    var newChild_1 = [ ...this.code.slice(0, pivot), ...gene.code.slice(pivot) ];
+    var newChild_2 = [ ...gene.code.slice(0, pivot), ...this.code.slice(pivot) ];
 
     return [new Gene(newChild_1), new Gene(newChild_2)];
   }
@@ -43,35 +41,47 @@ class Gene {
     if (Math.random() > percentage) {
       var index = Math.floor(Math.random() * this.code.length);
 
-      // determine how to shift the char
       var upDown = Math.random() > 0.5 ? 1 : -1;
 
-      // code = shifted index using upDown val
-      this.code = this.code.substr(0, index) + String.fromCharCode(this.code.charCodeAt(index) + upDown) + this.code.substr(index + 1);
+      var existingCode = this.code[index];
+
+      var newCode = existingCode + upDown
+            
+      var fixedCode = newCode > AVAILABLE_CHARACTERS.length ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length : newCode); 
+
+      this.code[index] = fixedCode;
     }
+  }
+
+  isSame(gene) {
+    return this.code.every((element, index) => gene.code[index] == element);
+  }
+
+  print() {
+    return this.code.map(element => AVAILABLE_CHARACTERS[element]).join("");
   }
 }
 
 class Population {
   // stores the entire gene population and finds the targetChromosome
   constructor(targetChromosome, popSize) {
+    this.running = false;
     this.genePool = [];
     this.generationNumber = 0;
-    this.targetChromosome = targetChromosome;
+
+    this.targetChromosome = new Gene(targetChromosome.split('').map(value => AVAILABLE_CHARACTERS.indexOf(value)));
 
     // create genes with random codes and insert into gene pool
     for (var i = 0; i < popSize; i++) {
       var gene = new Gene();
-      gene.generateCode(this.targetChromosome.length);
+      gene.generateCode(this.targetChromosome.code.length);
       this.genePool.push(gene);
     }
   }
 
   // helper function to sort gene pool by cost
   sort() {
-    this.genePool.sort(function (a, b) {
-      return (a.cost - b.cost);
-    });
+    this.genePool.sort((a, b) => a.cost - b.cost);
   }
 
   // perform calculations for current generation
@@ -104,18 +114,17 @@ class Population {
       this.genePool[i].calcDiff(this.targetChromosome);
 
       // check if gene is the target and display it
-      if (this.genePool[i].code == this.targetChromosome) {
+      if (this.genePool[i].isSame(this.targetChromosome)) {
         this.sort();
         this.print();
-        started = false;
+        this.running = false;
         return true;
       }
     }
 
     this.generationNumber++;
 
-    var scope = this;
-    setTimeout(function() { scope.generation(); } , 20);
+    setTimeout(() => { this.generation(); }, 20);
   }
 
   print() {
@@ -124,7 +133,7 @@ class Population {
     table.innerHTML += ("<h2>Generation: " + this.generationNumber + "</h2>");
     table.innerHTML += ("<ul>");
     for (var i = 0; i < this.genePool.length; i++) {
-      table.innerHTML += ("<li>" + this.genePool[i].code + " (" + this.genePool[i].cost + ")");
+      table.innerHTML += ("<li>" + this.genePool[i].print() + " (" + this.genePool[i].cost + ")");
     }
     table.innerHTML += ("</ul>");
   };
@@ -132,9 +141,12 @@ class Population {
 }
 
 function start() {
-  if ( ! started) {
-    started = true;
-    var pop  = new Population("Hello, world!", 20);
-    pop.generation();
-  }
+  const pop  = new Population("Hello, world!", 20);
+  pop.generation();
 };
+
+
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("start").addEventListener("click", start);
+    if (RUN_ON_START) start();
+});
