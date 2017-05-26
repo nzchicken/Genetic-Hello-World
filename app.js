@@ -9,31 +9,28 @@ class Gene {
   }
 
   generateCode(length) {
-    for (var i = 0; i < length; i++) {
-      this.code[i] = Math.floor(Math.random() * AVAILABLE_CHARACTERS.length);
-    }
+    this.code = Array.from(Array(length)).map(() => { return Math.floor(Math.random() * AVAILABLE_CHARACTERS.length); });
   }
 
   // calculate difference between current gene and other gene
   calcDiff(otherGene) {
-    var val = 0;
-    for (var i = 0; i < this.code.length; i++) {
-      val += (this.code[i] - otherGene.code[i]) * (this.code[i] - otherGene.code[i]);
-    }
-    this.cost = val;
+    this.cost = this.code.reduce((a, v, i) => a + Math.abs(v - otherGene.code[i]), 0);
   }
 
   // mate current gene with another gene
   // pivot may be changed for better results
-  mate(gene) {
+  mate(gene, mutateChance) {
 
-    var pivot = Math.round(this.code.length/2) - 1;
+    const pivot = Math.round(this.code.length/2) - 1;
 
     // new children will take half of each gene
-    var newChild_1 = [ ...this.code.slice(0, pivot), ...gene.code.slice(pivot) ];
-    var newChild_2 = [ ...gene.code.slice(0, pivot), ...this.code.slice(pivot) ];
+    const child1 = new Gene([ ...this.code.slice(0, pivot), ...gene.code.slice(pivot) ]);
+    const child2 = new Gene([ ...gene.code.slice(0, pivot), ...this.code.slice(pivot) ]);
 
-    return [new Gene(newChild_1), new Gene(newChild_2)];
+    child1.mutate(mutateChance);
+    child2.mutate(mutateChance);
+
+    return [ child1, child2 ];
   }
 
   // randomly mutate gene by a character depending on the percentage
@@ -46,85 +43,96 @@ class Gene {
       var existingCode = this.code[index];
 
       var newCode = existingCode + upDown
-            
-      var fixedCode = newCode > AVAILABLE_CHARACTERS.length ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length : newCode); 
+
+      var fixedCode = newCode > AVAILABLE_CHARACTERS.length ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length : newCode);
 
       this.code[index] = fixedCode;
     }
   }
 
-  isSame(gene) {
-    return this.code.every((element, index) => gene.code[index] == element);
-  }
-
   print() {
-    return this.code.map(element => AVAILABLE_CHARACTERS[element]).join("");
+    return htmlEntities(this.code.map(element => AVAILABLE_CHARACTERS[element]).join(""));
   }
 }
 
 class Population {
   // stores the entire gene population and finds the targetChromosome
-  constructor(targetChromosome, popSize) {
-    this.running = false;
+  constructor() {
+    this.running = true;
+    this.targetAchieved = false;
     this.genePool = [];
     this.generationNumber = 0;
-
-    this.targetChromosome = new Gene(targetChromosome.split('').map(value => AVAILABLE_CHARACTERS.indexOf(value)));
-
-    // create genes with random codes and insert into gene pool
-    for (var i = 0; i < popSize; i++) {
-      var gene = new Gene();
-      gene.generateCode(this.targetChromosome.code.length);
-      this.genePool.push(gene);
-    }
+    this.targetChromosome = null;
   }
 
-  // helper function to sort gene pool by cost
+  setPopSize(size) {
+    this.genePool = Array.from(Array(size));
+  }
+
+  setTarget(target) {
+    this.targetChromosome = new Gene(target.split('').map(val => AVAILABLE_CHARACTERS.indexOf(val)));
+    this.genePool = this.genePool.map(() => {
+      const gene = new Gene();
+      gene.generateCode(target.length);
+      return gene;
+    });
+
+    this.genePool.map(gene => { gene.calcDiff(this.targetChromosome) });
+    this.sort();
+    this.targetAchieved = false;
+  }
+
   sort() {
     this.genePool.sort((a, b) => a.cost - b.cost);
   }
 
-  // perform calculations for current generation
+  start(target, size) {
+    this.generationNumber = 0;
+    this.setPopSize(size);
+    this.setTarget(target);
+    this.print();
+  }
+
+  pause() {
+    this.running = false;
+  }
+
+  resume() {
+    this.running = true;
+    this.step();
+  }
+
+  step() {
+    this.generation();
+
+    if (this.genePool[0].cost === 0) this.running = false;
+    if (this.running) window.setTimeout(() => { this.step() }, 0);
+  }
+
   generation() {
+    //  each generation needs a new set of children.
+    //  each mating causes 2 new children - some with genetic changes
+    //  mate the first half (best children) with the best child,
+    //  mate the lowest cost with the next lowest cost
+    //  add the new children (2 new records) to the pool, replacing the last 2 items
 
-    // for all genes, calculate their cost
-    for (var i = 0 ; i < this.genePool.length; i++) {
-      this.genePool[i].calcDiff(this.targetChromosome);
-    }
+    const mutateChance = 0.3;
 
-    this.sort();
+    const childrenToMate = Math.floor(this.genePool.length / 2 + 0.5); //half rounded up
 
-    // mate the genes with the lowest cost
-    var children = this.genePool[0].mate(this.genePool[1]);
+    const newChildren = Array.from(Array(childrenToMate)).reduce((a, v, i) => {
+      const children = this.genePool[0].mate(this.genePool[i+1], mutateChance);
+      children.map(child => { child.calcDiff(this.targetChromosome) });
+      return a.concat(children);
+    }, []);
 
-    // remove the genes with the highest cost and replace them with the new children
-    this.genePool.splice(this.genePool.length - 2, 2, children[0], children[1]);
 
-    // calculate the respective difference for the children genes
-    this.genePool[this.genePool.length-1].calcDiff(this.targetChromosome);
-    this.genePool[this.genePool.length-2].calcDiff(this.targetChromosome);
+    this.genePool = newChildren.slice(0, this.genePool.length);
 
     this.sort();
     this.print();
 
-    for (var i = 0; i < this.genePool.length; i++) {
-
-      // mutate and calculate difference
-      this.genePool[i].mutate(0.3);
-      this.genePool[i].calcDiff(this.targetChromosome);
-
-      // check if gene is the target and display it
-      if (this.genePool[i].isSame(this.targetChromosome)) {
-        this.sort();
-        this.print();
-        this.running = false;
-        return true;
-      }
-    }
-
     this.generationNumber++;
-
-    setTimeout(() => { this.generation(); }, 20);
   }
 
   print() {
@@ -140,13 +148,17 @@ class Population {
 
 }
 
-function start() {
-  const pop  = new Population("Hello, world!", 20);
-  pop.generation();
-};
-
-
 window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("start").addEventListener("click", start);
-    if (RUN_ON_START) start();
+  pop = new Population();
+  const startString = 'Hello, World!';
+  const initPopSize = 0;
+  document.getElementById("start").addEventListener("click", () => { pop.start(startString, initPopSize); });
+  document.getElementById("pause").addEventListener("click", () => { pop.pause(); });
+  document.getElementById("resume").addEventListener("click", () => { pop.resume(); });
+  document.getElementById("step").addEventListener("click", () => { pop.step(); });
+  if (RUN_ON_START) pop.start(startString, initPopSize);
 });
+
+function htmlEntities(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\ /g, '&nbsp;');
+}
