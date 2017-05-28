@@ -43,17 +43,27 @@ class Gene {
   // randomly mutate gene by a character depending on the percentage
   mutate(percentage) {
     if (Math.random() > percentage) {
-      var index = Math.floor(Math.random() * this.code.length);
 
-      var upDown = Math.random() > 0.5 ? 1 : -1;
-
-      var existingCode = this.code[index];
-
-      var newCode = existingCode + upDown
-
-      var fixedCode = newCode > AVAILABLE_CHARACTERS.length - 1 ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length - 1: newCode);
-
-      this.code[index] = fixedCode;
+      const operation = Math.random();
+      const index = Math.floor(Math.random() * this.code.length);
+      const upDown = Math.random() > 0.5 ? 1 : -1;
+      switch(true) {
+        case (operation < 0.33):
+          var newCode = this.code[index] + upDown;
+          var fixedCode = newCode > AVAILABLE_CHARACTERS.length - 1 ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length - 1: newCode);
+          this.code[index] = fixedCode;
+          break;
+        case (operation < 0.66):
+          var copyPos = index + upDown;
+          var newPos = copyPos < 0 ? this.code.length - 1 : (copyPos > this.code.length - 1 ? 0 : copyPos);
+          this.code[index] = this.code[newPos];
+          break;
+        default:
+          var newCode = this.code[index] + upDown*2;
+          var fixedCode = newCode > AVAILABLE_CHARACTERS.length - 1 ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length - 1: newCode);
+          this.code[index] = fixedCode;
+          break;
+      }
     }
   }
 
