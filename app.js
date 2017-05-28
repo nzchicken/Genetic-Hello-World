@@ -133,12 +133,6 @@ class Population {
   }
 
   generation() {
-    //  each generation needs a new set of children.
-    //  each mating causes 2 new children - some with genetic changes
-    //  mate the first half (best children) with the best child,
-    //  mate the lowest cost with the next lowest cost
-    //  add the new children (2 new records) to the pool, replacing the last 2 items
-
     const mutateChance = 0.3;
 
     const childrenToMate = Math.floor(this.genePool.length / 2 + 0.5); //half rounded up
