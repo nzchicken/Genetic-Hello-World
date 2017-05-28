@@ -2,6 +2,7 @@ const RUN_ON_START = false;
 const AVAILABLE_CHARACTERS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345789!@#$%^&*()_+`~[]{}\|;':\".,/<>?";
 const AVAIL_CHAR_LENGTH = AVAILABLE_CHARACTERS.length;
 const AVAIL_CHAR_HALF_LENGTH = Math.floor(AVAIL_CHAR_LENGTH/2);
+const CHILD_PRINT_MODULO = 5;
 
 // individual genes
 class Gene {
@@ -69,6 +70,7 @@ class Population {
     this.genePool = [];
     this.generationNumber = 0;
     this.targetChromosome = null;
+    this.bestGeneTemplate = document.getElementById('bestGenesContainer').innerHTML;
   }
 
   setPopSize(size) {
@@ -93,10 +95,12 @@ class Population {
   }
 
   start(target, size) {
+    document.getElementById('bestGenesContainer').innerHTML = this.bestGeneTemplate;
     this.generationNumber = 0;
     this.setPopSize(size);
     this.setTarget(target);
     this.print();
+    this.generationNumber++;
   }
 
   pause() {
@@ -111,7 +115,10 @@ class Population {
   step() {
     this.generation();
 
-    if (this.genePool[0].cost === 0) this.running = false;
+    if (this.genePool[0].cost === 0) {
+      this.running = false;
+      this.print();
+    }
     if (this.running) window.setTimeout(() => { this.step() }, 0);
   }
 
@@ -136,7 +143,8 @@ class Population {
     this.genePool = newChildren.slice(0, this.genePool.length);
 
     this.sort();
-    this.print();
+
+    if (this.generationNumber % CHILD_PRINT_MODULO === 0) this.print();
 
     this.generationNumber++;
   }
@@ -150,6 +158,11 @@ class Population {
       table.innerHTML += ("<li>" + this.genePool[i].print() + " (" + this.genePool[i].cost + ")");
     }
     table.innerHTML += ("</ul>");
+
+    var bestGenes = document.getElementById('bestGenes');
+    var newChild = document.createElement('tr');
+    newChild.innerHTML = '<td>' + this.generationNumber + '</td><td>' + this.genePool[0].print() + '</td><td>' + this.genePool[0].cost + '</td>';
+    bestGenes.appendChild(newChild);
   };
 
 }

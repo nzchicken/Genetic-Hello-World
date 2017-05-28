@@ -3,32 +3,59 @@
 	<head>
 	<title>Genetic Hello World</title>
 		<style>
+            * {
+                box-sizing: border-box;
+            }
+
 			body {
+                padding: 0;
+                margin: 0;
 				font-family: monospace;
 				font-size: 12px;
 				font-style: normal;
 				font-variant: normal;
 				font-weight: 400;
 				line-height: 12px;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
 			}
 
-			footer {
-				position: absolute;
-				right: 0;
-				bottom: 0;
-				left: 0;
+            header, footer {
+                flex: none;
+            }
+
+            section {
+                flex-grow: 1;
+            }
+
+			header, section, footer {
 				padding: 1rem;
 			}
 		</style>
 	</head>
 	<body>
-		<button id="start">Start</button>
-		<button id="pause">Pause</button>
-		<button id="resume">Resume</button>
-		<button id="step">Step</button>
-		<div id='table'>
-			<h2>Generation: 0</h2>
-		</div>
+        <header>
+            <button id="start">Start</button>
+            <button id="pause">Pause</button>
+            <button id="resume">Resume</button>
+            <button id="step">Step</button>
+        </header>
+        <section>
+            <div id='table'>
+                <h2>Generation: 0</h2>
+            </div>
+            <div id="bestGenesContainer">
+                <h2>Best Genes</h2>
+                <table id="bestGenes">
+                    <tr>
+                        <th>Generation</th>
+                        <th>Value</th>
+                        <th>Cost</th>
+                    </tr>
+                </table>
+            </div>
+        </section>
         <footer>Made by <a href="https://github.com/sacert">Stephen Kang</a>. Extended by <a href="https://github.com/nzchicken">Ben Naylor</a>. Source on <a href="https://github.com/nzchicken/Genetic-Hello-World">GitHub</a></footer>
-	</body>
+    </body>
 </html>
