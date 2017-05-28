@@ -1,5 +1,7 @@
 const RUN_ON_START = false;
 const AVAILABLE_CHARACTERS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345789!@#$%^&*()_+`~[]{}\|;':\".,/<>?";
+const AVAIL_CHAR_LENGTH = AVAILABLE_CHARACTERS.length;
+const AVAIL_CHAR_HALF_LENGTH = Math.floor(AVAIL_CHAR_LENGTH/2);
 
 // individual genes
 class Gene {
@@ -12,9 +14,13 @@ class Gene {
     this.code = Array.from(Array(length)).map(() => { return Math.floor(Math.random() * AVAILABLE_CHARACTERS.length); });
   }
 
-  // calculate difference between current gene and other gene
+  // calculate difference between current gene and other gene. higher costs are exponentially higher)
   calcDiff(otherGene) {
-    this.cost = this.code.reduce((a, v, i) => a + Math.abs(v - otherGene.code[i]), 0);
+    this.cost = this.code.reduce((a, v, i) => {
+      const diff = Math.abs(v - otherGene.code[i]);
+      const cost = diff > AVAIL_CHAR_HALF_LENGTH ? -1 * diff + AVAIL_CHAR_LENGTH : diff;
+      return a + (cost * cost);
+    }, 0);
   }
 
   // mate current gene with another gene
@@ -44,7 +50,7 @@ class Gene {
 
       var newCode = existingCode + upDown
 
-      var fixedCode = newCode > AVAILABLE_CHARACTERS.length ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length : newCode);
+      var fixedCode = newCode > AVAILABLE_CHARACTERS.length - 1 ? 0 : (newCode < 0 ? AVAILABLE_CHARACTERS.length - 1: newCode);
 
       this.code[index] = fixedCode;
     }
@@ -151,7 +157,7 @@ class Population {
 window.addEventListener("DOMContentLoaded", () => {
   pop = new Population();
   const startString = 'Hello, World!';
-  const initPopSize = 0;
+  const initPopSize = 20;
   document.getElementById("start").addEventListener("click", () => { pop.start(startString, initPopSize); });
   document.getElementById("pause").addEventListener("click", () => { pop.pause(); });
   document.getElementById("resume").addEventListener("click", () => { pop.resume(); });
