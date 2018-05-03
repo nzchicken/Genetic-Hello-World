@@ -32,14 +32,24 @@
 			header, section, footer {
 				padding: 1rem;
 			}
+            
+            .gene.same {
+                background-color: lightgreen;
+            }
+
+            .gene.diff {
+                background-color: lightyellow;
+            }
 		</style>
 	</head>
 	<body>
         <header>
-            <button id="start">Start</button>
-            <button id="pause">Pause</button>
-            <button id="resume">Resume</button>
+            <button id="start">Generate Genes</button>
+            <button id="toggleRunning">Run/Pause</button>
             <button id="step">Step</button>
+            |
+            <input id="target" type="text" value="Hello World!" />
+            <button id="setTarget">Set Target</button>
         </header>
         <section>
             <div id='table'>

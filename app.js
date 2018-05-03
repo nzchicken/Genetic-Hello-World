@@ -1,8 +1,7 @@
-const RUN_ON_START = false;
 const AVAILABLE_CHARACTERS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345789!@#$%^&*()_+`~[]{}\|;':\".,/<>?";
 const AVAIL_CHAR_LENGTH = AVAILABLE_CHARACTERS.length;
 const AVAIL_CHAR_HALF_LENGTH = Math.floor(AVAIL_CHAR_LENGTH/2);
-const CHILD_PRINT_MODULO = 5;
+const CHILD_PRINT_MODULO = 1;
 
 // individual genes
 class Gene {
@@ -67,15 +66,17 @@ class Gene {
     }
   }
 
-  print() {
-    return htmlEntities(this.code.map(element => AVAILABLE_CHARACTERS[element]).join(""));
+  print(targetChromosome) {
+    return this.code.reduce((a,c,i) => {
+      return a + '<span class="gene ' + (c === targetChromosome.code[i] ? 'same' : 'diff') + '">' + htmlEscape(AVAILABLE_CHARACTERS[c]) + '</span>';
+    }, '')
   }
 }
 
 class Population {
   // stores the entire gene population and finds the targetChromosome
   constructor() {
-    this.running = true;
+    this.running = false;
     this.targetAchieved = false;
     this.genePool = [];
     this.generationNumber = 0;
@@ -88,6 +89,7 @@ class Population {
   }
 
   setTarget(target) {
+    this.target = target;
     this.targetChromosome = new Gene(target.split('').map(val => AVAILABLE_CHARACTERS.indexOf(val)));
     this.genePool = this.genePool.map(() => {
       const gene = new Gene();
@@ -104,22 +106,17 @@ class Population {
     this.genePool.sort((a, b) => a.cost - b.cost);
   }
 
-  start(target, size) {
+  start() {
     document.getElementById('bestGenesContainer').innerHTML = this.bestGeneTemplate;
     this.generationNumber = 0;
-    this.setPopSize(size);
-    this.setTarget(target);
     this.print();
     this.generationNumber++;
   }
 
-  pause() {
-    this.running = false;
-  }
+  toggleRunning() {
+    this.running = !this.running;
 
-  resume() {
-    this.running = true;
-    this.step();
+    if (this.running) this.step();
   }
 
   step() {
@@ -159,29 +156,29 @@ class Population {
     table.innerHTML += ("<h2>Generation: " + this.generationNumber + "</h2>");
     table.innerHTML += ("<ul>");
     for (var i = 0; i < this.genePool.length; i++) {
-      table.innerHTML += ("<li>" + this.genePool[i].print() + " (" + this.genePool[i].cost + ")");
+      table.innerHTML += ("<li>" + this.genePool[i].print(this.targetChromosome) + " (" + this.genePool[i].cost + ")");
     }
     table.innerHTML += ("</ul>");
 
     var bestGenes = document.getElementById('bestGenes');
     var newChild = document.createElement('tr');
-    newChild.innerHTML = '<td>' + this.generationNumber + '</td><td>' + this.genePool[0].print() + '</td><td>' + this.genePool[0].cost + '</td>';
+    newChild.innerHTML = '<td>' + this.generationNumber + '</td><td>' + this.genePool[0].print(this.targetChromosome) + '</td><td>' + this.genePool[0].cost + '</td>';
     bestGenes.appendChild(newChild);
   };
-
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   pop = new Population();
-  const startString = 'Hello, World!';
-  const initPopSize = 20;
-  document.getElementById("start").addEventListener("click", () => { pop.start(startString, initPopSize); });
-  document.getElementById("pause").addEventListener("click", () => { pop.pause(); });
-  document.getElementById("resume").addEventListener("click", () => { pop.resume(); });
+  pop.setPopSize(20);
+  const startString = document.getElementById('target').value;
+  pop.setTarget(startString);
+  document.getElementById("start").addEventListener("click", () => { pop.setTarget(pop.target); pop.start(); });
+  document.getElementById("toggleRunning").addEventListener("click", () => { pop.toggleRunning(); });
   document.getElementById("step").addEventListener("click", () => { pop.step(); });
-  if (RUN_ON_START) pop.start(startString, initPopSize);
+  document.getElementById("setTarget").addEventListener("click", () => { pop.setTarget(document.getElementById('target').value); pop.start(); });
+  pop.start();
 });
 
-function htmlEntities(str) {
+function htmlEscape(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\ /g, '&nbsp;');
 }
